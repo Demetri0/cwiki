@@ -16,3 +16,4 @@ Then you can run a wikipedia search by typing `cwiki.py` followed by your query 
 - `cwiki.py anime`
 - `cwiki.py anime -c 4` or `cwiki.py anime --count 4`
 - `cwiki.py anime -l ru` or `cwiki.py anime --lang ru`
+- `cwiki.py Anime -e` or `cwiki.py Anime --extend`
