@@ -37,6 +37,16 @@ class WikiItem:
     text = ""
     url = ""
 
+class Http:
+    def get(url, params):
+        try:
+            url_params = urllib.parse.urlencode(params)
+            res = urllib.request.urlopen(url + url_params)
+            return res.read()
+        finally:
+            print("Http.get: Network is unreachable")
+            return None
+
 class Wikipedia:
     "Class for acess wikipedia API"
     lang = "en"
@@ -70,26 +80,26 @@ class Wikipedia:
         return [article]
     def find(self, query, count = 3):
         "Find term in wikipedia.org"
-        params = {
+        res = Http.get(self.base_api_url, {
             'limit': count,
             'format': self.format,
             'action': 'opensearch',
             'search': query
-        }
-        url_params = urllib.parse.urlencode(params)
-        res = urllib.request.urlopen(self.base_api_url + url_params)
-        return self.parseResponse_find( res.read() )
+        })
+        if res == None:
+            return []
+        return self.parseResponse_find( res )
     def getFullpage(self, title):
         "Get full page content by title"
-        params = {
+        res = Http.get(self.base_api_url, {
             'action': 'mobileview',
             'page': title,
             'sections': 0,
             'format': self.format
-        }
-        url_params = urllib.parse.urlencode(params)
-        res = urllib.request.urlopen(self.base_api_url + url_params);
-        return self.parseResponse_fullpage( title, res.read() )
+        })
+        if res == None:
+            return []
+        return self.parseResponse_fullpage( title, res )
 
 class Printer:
     def print(self, list):
@@ -99,6 +109,8 @@ class CliPrinter(Printer):
     def __init__(self, colorize):
         self.colorize = colorize
     def print(self, wikiItemsList):
+        if wikiItemsList == None:
+            return None
         for item in wikiItemsList:
             if self.colorize:
                 print(colors.HEADER + item.title + colors.ENDC + " (" + colors.UNDERLINE + item.url + colors.ENDC + ")")
