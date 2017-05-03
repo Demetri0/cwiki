@@ -15,6 +15,24 @@ class colors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+from html.parser import HTMLParser
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.strict = False
+        self.convert_charrefs= True
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
+
 class WikiItem:
     title = ""
     text = ""
@@ -23,10 +41,15 @@ class WikiItem:
 class Wikipedia:
     "Class for acess wikipedia API"
     lang = "en"
+    format = "json"
+    base_url = "https://en.wikipedia.org/wiki/"
+    base_api_url = "https://en.wikipedia.org/w/api.php?"
     def __init__(self, lang = "en"):
         self.lang = lang
+        self.base_url = "https://"+lang+".wikipedia.org/wiki/"
+        self.base_api_url = "https://"+lang+".wikipedia.org/w/api.php?"
         return None
-    def parseResponse(self, response):
+    def parseResponse_find(self, response):
         response = json.loads(response)
         resTitles = response[1]
         resDescr  = response[2]
@@ -39,20 +62,38 @@ class Wikipedia:
             item.url   = resUrl[i]
             items.append( item )
         return items
+    def parseResponse_fullpage(self, title, response):
+        response = json.loads(response)
+        article = WikiItem()
+        article.title = title
+        article.text = strip_tags( response["mobileview"]["sections"][0]["text"] )
+        article.url = self.base_url + article.title
+        return [article]
     def find(self, query, count = 3):
         "Find term in wikipedia.org"
         params = {
             'limit': count,
-            'format': 'json',
+            'format': self.format,
             'action': 'opensearch',
             'search': query
         }
         url_params = urllib.parse.urlencode(params)
-        res = urllib.request.urlopen("http://"+self.lang+".wikipedia.org/w/api.php?" + url_params)
-        #res = urllib.request.urlopen("http://"+self.lang+".wikipedia.org/w/api.php?action=opensearch&format=json&search="+query)
-        return self.parseResponse( res.read() )
+        res = urllib.request.urlopen(self.base_api_url + url_params)
+        return self.parseResponse_find( res.read() )
+    def getFullpage(self, title):
+        "Get full page content by title"
+        params = {
+            'action': 'mobileview',
+            'page': title,
+            'sections': 0,
+            'format': self.format
+        }
+        url_params = urllib.parse.urlencode(params)
+        res = urllib.request.urlopen(self.base_api_url + url_params);
+        return self.parseResponse_fullpage( title, res.read() )
 
 class CliPrinter:
+    "TODO: non itareble and empty value"
     def print(self, wikiItemsList):
         for item in wikiItemsList:
             print(colors.HEADER + item.title + colors.ENDC + " (" + colors.UNDERLINE + item.url + colors.ENDC + ")")
@@ -68,10 +109,9 @@ class Application:
     def getParser(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('query')
-        parser.add_argument("-l", "--lang", default="en",
-                help="Set language for serach")
-        parser.add_argument("-c", "--count", default=3,
-                help="Limit search result")
+        parser.add_argument("-l", "--lang", default="en", help="Set language for serach")
+        parser.add_argument("-c", "--count", default=3, help="Limit search result")
+        parser.add_argument("-e", "--extend", const=True, action="store_const", help="Get full article by title")
         return parser
     def parseArgs(self, argv):
         parser = self.getParser()
@@ -82,7 +122,10 @@ class Application:
         self.wiki = Wikipedia(self.args.lang)
         self.printer = CliPrinter()
     def run(self):
-        items = self.wiki.find( self.args.query, self.args.count )
+        if not self.args.extend:
+            items = self.wiki.find( self.args.query, self.args.count )
+        else:
+            items = self.wiki.getFullpage( self.args.query )
         self.printer.print(items)
         return 0
 
