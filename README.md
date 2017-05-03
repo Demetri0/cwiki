@@ -14,6 +14,7 @@ Then you can run a wikipedia search by typing `cwiki.py` followed by your query 
 
 ## Usage
 - `cwiki.py anime`
-- `cwiki.py anime -c 4` or `cwiki.py anime --count 4`
-- `cwiki.py anime -l ru` or `cwiki.py anime --lang ru`
-- `cwiki.py Anime -e` or `cwiki.py Anime --extend`
+- `cwiki.py anime -c 4` or `cwiki.py anime --count 4` - set limit of response
+- `cwiki.py anime -l ru` or `cwiki.py anime --lang ru` - set language
+- `cwiki.py Anime -e` or `cwiki.py Anime --extend` - get full article
+- `cwiki.py Anime --color` - colorize output
