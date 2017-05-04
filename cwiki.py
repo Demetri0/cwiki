@@ -43,8 +43,8 @@ class Http:
             url_params = urllib.parse.urlencode(params)
             res = urllib.request.urlopen(url + url_params)
             return res.read()
-        finally:
-            print("Http.get: Network is unreachable")
+        except:
+            print("Http.get: Network is unreachable. ")
             return None
 
 class Wikipedia:
